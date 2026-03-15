@@ -1,0 +1,47 @@
+# Build artifacts
+build/
+Builds/
+cmake-build-*/
+*.xcodeproj/
+*.xcworkspace/
+*.xctestplan
+
+# JUCE
+JuceLibraryCode/
+*.jucer.backup
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled
+*.o
+*.a
+*.so
+*.dylib
+*.vst3
+*.component
+*.app
+
+# Logs
+*.log
