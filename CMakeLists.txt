@@ -7,8 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # JUCE as submodule at ./JUCE
 add_subdirectory(JUCE)
 
-# Plugins (add one at a time as each is built)
+# Plugins (uncomment as each is built)
 add_subdirectory(Resin)
+# add_subdirectory(Ferrite)   ← metallic transformer saturation, bonus plugin
 # add_subdirectory(Mycelium)
 # add_subdirectory(Aureole)
 # add_subdirectory(Pollen)

@@ -1,22 +1,22 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-ResinProcessor::ResinProcessor()
+FerriteProcessor::FerriteProcessor()
     : AudioProcessor (BusesProperties()
         .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
         .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "ResinState", createParameterLayout())
+      apvts (*this, nullptr, "FerriteState", createParameterLayout())
 {
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout ResinProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout FerriteProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
     auto pct = juce::NormalisableRange<float> (0.0f, 1.0f);
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("drive",  "Drive",  pct, 0.25f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("age",    "Age",    pct, 0.20f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("drive",  "Drive",  pct, 0.3f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("age",    "Age",    pct, 0.3f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("tone",   "Tone",   pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("output", "Output", pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("mix",    "Mix",    pct, 1.0f));
@@ -26,7 +26,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ResinProcessor::createParame
     return layout;
 }
 
-void ResinProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void FerriteProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
 
@@ -37,16 +37,15 @@ void ResinProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     oversampler.initProcessing ((size_t) samplesPerBlock);
 
-    // pre-emphasis: gentle +2dB low-mid warmth boost @ 800Hz before saturation
-    // (warms the harmonic content without sharpening highs → no metallic edge)
+    // pre-emphasis: +4dB high shelf @ 3kHz — adds tape presence before saturation
     preEmphFilter.prepare (spec);
-    *preEmphFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowShelf (
-        sampleRate, 800.0f, 0.707f, juce::Decibels::decibelsToGain (2.0f));
+    *preEmphFilter.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (
+        sampleRate, 3000.0f, 0.707f, juce::Decibels::decibelsToGain (4.0f));
 
-    // de-emphasis: matching -2dB shelf after saturation
+    // de-emphasis: matching -4dB shelf — restores linearity, harmonic content stays
     deEmphFilter.prepare (spec);
-    *deEmphFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowShelf (
-        sampleRate, 800.0f, 0.707f, juce::Decibels::decibelsToGain (-2.0f));
+    *deEmphFilter.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf (
+        sampleRate, 3000.0f, 0.707f, juce::Decibels::decibelsToGain (-4.0f));
 
     // tone filter: LPF, coefficients updated dynamically in processBlock
     toneFilter.prepare (spec);
@@ -67,7 +66,7 @@ void ResinProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     isPrepared = true;
 }
 
-void ResinProcessor::releaseResources()
+void FerriteProcessor::releaseResources()
 {
     oversampler.reset();
     preEmphFilter.reset();
@@ -76,32 +75,24 @@ void ResinProcessor::releaseResources()
     isPrepared = false;
 }
 
-// waveshaper: genuine even-harmonic warmth via DC bias asymmetry
-// age=0  → pure warm bloom, mostly 2nd harmonic (like a well-biased triode)
-// age=0.5 → gentle saturation with some 3rd harmonic colour
-// age=1  → fuller saturation, more complex — still musical, not metallic
-float ResinProcessor::saturate (float x, float driveGain, float age) noexcept
+// waveshaper: blend between tube (even harmonics) and transformer (asymmetric)
+float FerriteProcessor::saturate (float x, float driveGain, float age) noexcept
 {
-    // DC bias: the key to generating even harmonics in a symmetric nonlinearity.
-    // A small positive offset into tanh creates 2nd-harmonic asymmetry — exactly
-    // what happens inside a tube operating at its bias point.
-    const float bias    = age * 0.18f;          // grows with age, max ~0.18
-    const float driven  = x * driveGain + bias;
+    const float driven = x * driveGain;
 
-    // soft tanh waveshaper (symmetric but biased → even harmonics dominate)
-    const float shaped  = std::tanh (driven);
+    // tube path: x/(1+|x|) — soft, musically rich, even harmonics
+    const float tube = driven / (1.0f + std::abs (driven));
 
-    // remove bias component from output so we don't shift the DC level
-    // (the subtracted term is the DC offset the bias introduced)
-    const float dcComp  = std::tanh (bias);
+    // transformer path: asymmetric — harder negative knee, adds character
+    const float xformer = (driven >= 0.0f)
+        ? driven / (1.0f + driven * 0.85f)     // soft positive
+        : std::tanh (driven * 1.3f);            // sharper negative
 
-    // gentle output normalisation — keeps loudness consistent with drive
-    const float norm    = 1.0f / std::max (std::tanh (driveGain + bias), 0.01f);
-
-    return (shaped - dcComp) * norm;
+    // blend: age=0 → pure tube, age=1 → transformer asymmetry
+    return tube + age * (xformer - tube);
 }
 
-void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void FerriteProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     if (!isPrepared) return;
     if (buffer.getNumChannels() == 0 || buffer.getNumSamples() == 0) return;
@@ -222,26 +213,26 @@ void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     scopeWritePos.store (wPos, std::memory_order_relaxed);
 }
 
-void ResinProcessor::getStateInformation (juce::MemoryBlock& destData)
+void FerriteProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
 
-void ResinProcessor::setStateInformation (const void* data, int sizeInBytes)
+void FerriteProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml && xml->hasTagName (apvts.state.getType()))
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
 }
 
-juce::AudioProcessorEditor* ResinProcessor::createEditor()
+juce::AudioProcessorEditor* FerriteProcessor::createEditor()
 {
-    return new ResinEditor (*this);
+    return new FerriteEditor (*this);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ResinProcessor();
+    return new FerriteProcessor();
 }

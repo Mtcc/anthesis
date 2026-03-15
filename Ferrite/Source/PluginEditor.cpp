@@ -14,7 +14,7 @@ namespace
     juce::Font labelFont() { return juce::Font (juce::FontOptions ("Georgia", 11.0f, juce::Font::plain)); }
 }
 
-ResinEditor::ResinEditor (ResinProcessor& p)
+FerriteEditor::FerriteEditor (FerriteProcessor& p)
     : AudioProcessorEditor (p), proc (p), particles (rng)
 {
     setSize (kW, kH);
@@ -53,7 +53,7 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     macro2Attach = std::make_unique<Attachment> (proc.apvts, "macro2", macro2Knob);
 
     // preset dropdown
-    presetBox.addItem ("Fresh Resin",       1);
+    presetBox.addItem ("Fresh Ferrite",       1);
     presetBox.addItem ("Hiroshi Yoshimura", 2);
     presetBox.addItem ("Cocteau Twins",     3);
     presetBox.addItem ("Grouper",           4);
@@ -64,12 +64,12 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     {
         struct P { float drive, age, tone, output, mix; };
         static const P ps[] = {
-            { 0.15f, 0.08f, 0.88f, 0.72f, 1.00f },  // Fresh Resin    — barely there bloom
-            { 0.28f, 0.22f, 0.72f, 0.70f, 0.85f },  // Hiroshi Yoshimura — warm, elemental
-            { 0.38f, 0.18f, 0.82f, 0.72f, 0.90f },  // Cocteau Twins  — glassy warmth
-            { 0.55f, 0.55f, 0.45f, 0.65f, 0.75f },  // Grouper        — dark smear
-            { 0.45f, 0.50f, 0.52f, 0.68f, 0.80f },  // Boards of Canada — warm memory
-            { 0.72f, 0.80f, 0.38f, 0.62f, 0.70f },  // Aged Circuit   — deep color
+            { 0.20f, 0.10f, 0.90f, 0.70f, 1.00f },
+            { 0.35f, 0.30f, 0.75f, 0.68f, 0.85f },
+            { 0.45f, 0.20f, 0.85f, 0.72f, 0.90f },
+            { 0.60f, 0.70f, 0.40f, 0.65f, 0.75f },
+            { 0.50f, 0.65f, 0.50f, 0.68f, 0.80f },
+            { 0.80f, 0.90f, 0.35f, 0.60f, 0.70f },
         };
         int idx = presetBox.getSelectedId() - 1;
         if (idx >= 0 && idx < 6)
@@ -87,14 +87,14 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     startTimerHz ((int) kTimerHz);
 }
 
-ResinEditor::~ResinEditor()
+FerriteEditor::~FerriteEditor()
 {
     stopTimer();
     setLookAndFeel (nullptr);
 }
 
 // ── timer ─────────────────────────────────────────────────────────────────────
-void ResinEditor::timerCallback()
+void FerriteEditor::timerCallback()
 {
     constexpr float dt = 1.0f / kTimerHz;
     animTime    += dt;
@@ -109,7 +109,7 @@ void ResinEditor::timerCallback()
 
     // idle detection
     float maxSig = 0.0f;
-    for (int i = 0; i < ResinProcessor::kScopeSize; ++i)
+    for (int i = 0; i < FerriteProcessor::kScopeSize; ++i)
         maxSig = juce::jmax (maxSig, std::abs (proc.scopeOutput[i]));
 
     if (maxSig > 0.001f)
@@ -127,10 +127,10 @@ void ResinEditor::timerCallback()
     if (!isIdle)
     {
         int wPos = proc.scopeWritePos.load (std::memory_order_relaxed);
-        for (int i = 0; i < ResinProcessor::kScopeSize; ++i)
+        for (int i = 0; i < FerriteProcessor::kScopeSize; ++i)
         {
-            int src = (wPos - ResinProcessor::kScopeSize + i + ResinProcessor::kScopeSize)
-                      & (ResinProcessor::kScopeSize - 1);
+            int src = (wPos - FerriteProcessor::kScopeSize + i + FerriteProcessor::kScopeSize)
+                      & (FerriteProcessor::kScopeSize - 1);
             scopeIn  [i] = proc.scopeInput  [src];
             scopeOut [i] = proc.scopeOutput [src];
         }
@@ -142,7 +142,7 @@ void ResinEditor::timerCallback()
 
 // ── paint ─────────────────────────────────────────────────────────────────────
 // paint() runs BEFORE child components; paintOverChildren() runs AFTER.
-void ResinEditor::paint (juce::Graphics& g)
+void FerriteEditor::paint (juce::Graphics& g)
 {
     paintBackground  (g);
     paintAmberGarden (g);
@@ -157,7 +157,7 @@ void ResinEditor::paint (juce::Graphics& g)
     paintFooter (g);
 }
 
-void ResinEditor::paintOverChildren (juce::Graphics& g)
+void FerriteEditor::paintOverChildren (juce::Graphics& g)
 {
     // petal overlays sit ON TOP of macro knobs
     auto drawPetals = [&] (juce::Slider& knob, float phase)
@@ -173,7 +173,7 @@ void ResinEditor::paintOverChildren (juce::Graphics& g)
     particles.draw (g, getLocalBounds().toFloat());
 }
 
-void ResinEditor::paintBackground (juce::Graphics& g)
+void FerriteEditor::paintBackground (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
 
@@ -236,14 +236,14 @@ void ResinEditor::paintBackground (juce::Graphics& g)
     // title
     g.setFont (titleFont());
     g.setColour (AC::parchment());
-    g.drawText ("Resin", 18, 8, 140, 28, juce::Justification::centredLeft);
+    g.drawText ("Ferrite", 18, 8, 140, 28, juce::Justification::centredLeft);
 
     g.setFont (labelFont().italicised());
     g.setColour (AC::parchment().withAlpha (0.40f));
-    g.drawText ("warm saturation", 18, 34, 160, 16, juce::Justification::centredLeft);
+    g.drawText ("transformer saturation", 18, 34, 160, 16, juce::Justification::centredLeft);
 }
 
-void ResinEditor::paintAmberGarden (juce::Graphics& g)
+void FerriteEditor::paintAmberGarden (juce::Graphics& g)
 {
     float gx = 16.0f, gy = kHeaderH + 8.0f;
     float gw = (float) kW - 32.0f, gh = kGardenH - 16.0f;
@@ -303,7 +303,7 @@ void ResinEditor::paintAmberGarden (juce::Graphics& g)
     }
     else
     {
-        constexpr int kPts = ResinProcessor::kScopeSize / 2;
+        constexpr int kPts = FerriteProcessor::kScopeSize / 2;
         float yScale = gh * 0.40f;
 
         // input (thin amber)
@@ -325,13 +325,13 @@ void ResinEditor::paintAmberGarden (juce::Graphics& g)
     // label
     g.setFont (labelFont().italicised());
     g.setColour (AC::parchment().withAlpha (0.28f));
-    g.drawText ("Amber Garden", (int) gx + 8, (int) gy + 4, 130, 16,
+    g.drawText ("Iron Garden", (int) gx + 8, (int) gy + 4, 130, 16,
                 juce::Justification::centredLeft);
 
     g.restoreState();
 }
 
-juce::Path ResinEditor::buildVinePath (const float* samples, int count,
+juce::Path FerriteEditor::buildVinePath (const float* samples, int count,
                                         juce::Rectangle<float> area, float yScale) const
 {
     juce::Path path;
@@ -351,7 +351,7 @@ juce::Path ResinEditor::buildVinePath (const float* samples, int count,
     return path;
 }
 
-void ResinEditor::paintSectionDivider (juce::Graphics& g, float y)
+void FerriteEditor::paintSectionDivider (juce::Graphics& g, float y)
 {
     for (int i = 0; i < 9; ++i)
     {
@@ -362,7 +362,7 @@ void ResinEditor::paintSectionDivider (juce::Graphics& g, float y)
     }
 }
 
-void ResinEditor::paintFooter (juce::Graphics& g)
+void FerriteEditor::paintFooter (juce::Graphics& g)
 {
     float fy = (float) kH - kFooterH;
     g.setColour (AC::deepEarth().withAlpha (0.65f));
@@ -372,7 +372,7 @@ void ResinEditor::paintFooter (juce::Graphics& g)
 
     g.setFont (labelFont().italicised());
     g.setColour (AC::parchment().withAlpha (0.28f));
-    g.drawText ("Anthesis  \xe2\x80\x94  Resin  v1.0",
+    g.drawText ("Anthesis  \xe2\x80\x94  Ferrite  v1.0",
                 16, (int) fy + 4, kW - 32, (int) kFooterH - 8,
                 juce::Justification::centredLeft);
     g.drawText ("4\xc3\x97 oversampled  \xc2\xb7  tube/transformer  \xc2\xb7  de-emphasis",
@@ -380,7 +380,7 @@ void ResinEditor::paintFooter (juce::Graphics& g)
                 juce::Justification::centredRight);
 }
 
-void ResinEditor::resized()
+void FerriteEditor::resized()
 {
     presetBox.setBounds (kW - 210, 14, 196, 28);
 
