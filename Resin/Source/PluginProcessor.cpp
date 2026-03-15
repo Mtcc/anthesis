@@ -15,8 +15,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout ResinProcessor::createParame
 
     auto pct = juce::NormalisableRange<float> (0.0f, 1.0f);
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("drive",  "Drive",  pct, 0.25f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("age",    "Age",    pct, 0.20f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("drive",  "Drive",  pct, 0.35f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("age",    "Age",    pct, 0.30f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("tone",   "Tone",   pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("output", "Output", pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("mix",    "Mix",    pct, 1.0f));
@@ -76,29 +76,23 @@ void ResinProcessor::releaseResources()
     isPrepared = false;
 }
 
-// waveshaper: genuine even-harmonic warmth via DC bias asymmetry
-// age=0  → pure warm bloom, mostly 2nd harmonic (like a well-biased triode)
-// age=0.5 → gentle saturation with some 3rd harmonic colour
-// age=1  → fuller saturation, more complex — still musical, not metallic
+// waveshaper: warm even-harmonic saturation via DC bias (triode bias-point model)
+// age=0  → pure 2nd-harmonic bloom, soft and transparent
+// age=0.5 → rich tube warmth, some 3rd harmonic colour
+// age=1  → full saturation, complex harmonics — musical, not metallic
 float ResinProcessor::saturate (float x, float driveGain, float age) noexcept
 {
-    // DC bias: the key to generating even harmonics in a symmetric nonlinearity.
-    // A small positive offset into tanh creates 2nd-harmonic asymmetry — exactly
-    // what happens inside a tube operating at its bias point.
-    const float bias    = age * 0.18f;          // grows with age, max ~0.18
-    const float driven  = x * driveGain + bias;
+    // DC bias generates even harmonics — this is literally how a tube works.
+    // Larger bias = more 2nd harmonic asymmetry = warmer, richer colour.
+    const float bias   = age * 0.4f;            // 0 → 0.4, clearly audible
+    const float driven = x * driveGain + bias;
 
-    // soft tanh waveshaper (symmetric but biased → even harmonics dominate)
-    const float shaped  = std::tanh (driven);
+    // soft clip — output is bounded but NOT normalised back to input level.
+    // drive is supposed to push the level (user has output knob to compensate).
+    const float shaped = std::tanh (driven);
 
-    // remove bias component from output so we don't shift the DC level
-    // (the subtracted term is the DC offset the bias introduced)
-    const float dcComp  = std::tanh (bias);
-
-    // gentle output normalisation — keeps loudness consistent with drive
-    const float norm    = 1.0f / std::max (std::tanh (driveGain + bias), 0.01f);
-
-    return (shaped - dcComp) * norm;
+    // remove DC offset introduced by bias
+    return shaped - std::tanh (bias);
 }
 
 void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -142,7 +136,8 @@ void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     smoothMix   += (1.0f - tc) * (tMix   - smoothMix);
 
     // --- convert to usable ranges ---
-    const float driveGain = juce::jmap (smoothDrive, 0.0f, 1.0f, 1.0f, 14.0f);
+    // 1x (unity) to 20x (~26dB) — plenty of range from subtle to aggressive
+    const float driveGain = juce::jmap (smoothDrive, 0.0f, 1.0f, 1.0f, 20.0f);
     const float age       = smoothAge;
     const float outGain   = juce::Decibels::decibelsToGain (
         juce::jmap (smoothOut, 0.0f, 1.0f, -18.0f, 6.0f));
