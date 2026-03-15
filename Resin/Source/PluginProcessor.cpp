@@ -21,7 +21,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ResinProcessor::createParame
     layout.add (std::make_unique<juce::AudioParameterFloat> ("output", "Output", pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("mix",    "Mix",    pct, 1.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("macro1", "Flow",   pct, 0.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("macro2", "Age",    pct, 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("macro2", "Bloom",  pct, 0.0f));
 
     return layout;
 }
@@ -114,18 +114,24 @@ void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
     float macro2 = *apvts.getRawParameterValue ("macro2");
 
     // --- macro influence ---
-    // Flow (macro1): first half pushes drive to max, second half pushes age
+    // Flow (macro1): first half opens drive, second half adds age character
     if (macro1 <= 0.5f)
         tDrive += macro1 * 2.0f * (1.0f - tDrive);
     else {
         tDrive = 1.0f;
         tAge  += (macro1 - 0.5f) * 2.0f * (1.0f - tAge);
     }
-    // Age macro (macro2): directly pushes age
-    tAge += macro2 * (1.0f - tAge);
+
+    // Bloom (macro2): wet signal blooms into the mix as tone opens up.
+    // Like a flower opening — saturated sound unfurls from behind the dry signal.
+    // Pushes mix toward full wet AND opens tone toward bright simultaneously.
+    tMix  += macro2 * (1.0f - tMix);
+    tTone += macro2 * (1.0f - tTone);
 
     tDrive = juce::jlimit (0.0f, 1.0f, tDrive);
     tAge   = juce::jlimit (0.0f, 1.0f, tAge);
+    tMix   = juce::jlimit (0.0f, 1.0f, tMix);
+    tTone  = juce::jlimit (0.0f, 1.0f, tTone);
 
     // --- exponential block-level smoothing (~50ms) ---
     const float tc = std::exp (-6.2832f / (0.05f * (float) currentSampleRate / (float) numSamples));

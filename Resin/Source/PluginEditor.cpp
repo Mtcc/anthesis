@@ -42,7 +42,7 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     configKnob (outputKnob, outputLabel, "Output");
     configKnob (mixKnob,    mixLabel,    "Mix");
     configKnob (macro1Knob, macro1Label, "Flow");
-    configKnob (macro2Knob, macro2Label, "Age \xe2\x98\x86");  // Age ☆
+    configKnob (macro2Knob, macro2Label, "Bloom");
 
     driveAttach  = std::make_unique<Attachment> (proc.apvts, "drive",  driveKnob);
     ageAttach    = std::make_unique<Attachment> (proc.apvts, "age",    ageKnob);
