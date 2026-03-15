@@ -15,6 +15,8 @@ juce_add_plugin(Resin
 target_sources(Resin PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    Source/BotanicalLookAndFeel.cpp
+    Source/ParticleSystem.cpp
 )
 
 target_compile_definitions(Resin PUBLIC
