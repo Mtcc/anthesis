@@ -9,9 +9,10 @@ add_subdirectory(JUCE)
 
 # Plugins (uncomment as each is built)
 add_subdirectory(Resin)
-# add_subdirectory(Ferrite)   ← metallic transformer saturation, bonus plugin
-# add_subdirectory(Mycelium)
-# add_subdirectory(Aureole)
-# add_subdirectory(Pollen)
-# add_subdirectory(Corolla)
-# add_subdirectory(Alluvium)
+# add_subdirectory(Ferrite)   # metallic transformer saturation, bonus plugin
+add_subdirectory(Mycelium)
+add_subdirectory(Aureole)
+add_subdirectory(Pollen)
+add_subdirectory(Corolla)
+add_subdirectory(Alluvium)
+add_subdirectory(Understory)
