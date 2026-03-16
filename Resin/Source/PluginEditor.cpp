@@ -41,6 +41,7 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     configKnob (toneKnob,   toneLabel,   "Tone");
     configKnob (outputKnob, outputLabel, "Output");
     configKnob (mixKnob,    mixLabel,    "Mix");
+    configKnob (natureKnob, natureLabel, "Nature");
     configKnob (macro1Knob, macro1Label, "Flow");
     configKnob (macro2Knob, macro2Label, "Bloom");
 
@@ -49,6 +50,7 @@ ResinEditor::ResinEditor (ResinProcessor& p)
     toneAttach   = std::make_unique<Attachment> (proc.apvts, "tone",   toneKnob);
     outputAttach = std::make_unique<Attachment> (proc.apvts, "output", outputKnob);
     mixAttach    = std::make_unique<Attachment> (proc.apvts, "mix",    mixKnob);
+    natureAttach = std::make_unique<Attachment> (proc.apvts, "nature", natureKnob);
     macro1Attach = std::make_unique<Attachment> (proc.apvts, "macro1", macro1Knob);
     macro2Attach = std::make_unique<Attachment> (proc.apvts, "macro2", macro2Knob);
 
@@ -394,12 +396,12 @@ void ResinEditor::resized()
     macro2Label.setBounds ((int) macro2X, (int)(macroY + kMacroSize),     (int) kMacroSize, 16);
 
     float knobY   = macroY + kMacroH + 2.0f;
-    float spacing = (float) kW / 5.0f;
+    float spacing = (float) kW / 6.0f;
 
-    juce::Slider* knobs[]  = { &driveKnob, &ageKnob, &toneKnob, &outputKnob, &mixKnob };
-    juce::Label*  labels[] = { &driveLabel, &ageLabel, &toneLabel, &outputLabel, &mixLabel };
+    juce::Slider* knobs[]  = { &driveKnob, &ageKnob, &toneKnob, &outputKnob, &mixKnob, &natureKnob };
+    juce::Label*  labels[] = { &driveLabel, &ageLabel, &toneLabel, &outputLabel, &mixLabel, &natureLabel };
 
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 6; ++i)
     {
         float cx = spacing * (0.5f + (float) i);
         knobs[i]->setBounds  ((int)(cx - kKnobSize * 0.5f), (int) knobY,

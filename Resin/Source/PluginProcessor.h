@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include "NatureLayer.h"
 
 class ResinProcessor : public juce::AudioProcessor
 {
@@ -55,6 +56,9 @@ private:
 
     // DC blockers (one per channel, stereo)
     float dcX[2] = {}, dcY[2] = {};
+
+    NatureLayer natureLayer;
+    float smoothNature = 0.0f;
 
     // block-level smoothed parameters (exponential, ~50ms)
     float smoothDrive = 0.3f, smoothAge = 0.3f, smoothTone = 0.7f;

@@ -20,6 +20,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ResinProcessor::createParame
     layout.add (std::make_unique<juce::AudioParameterFloat> ("tone",   "Tone",   pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("output", "Output", pct, 0.7f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("mix",    "Mix",    pct, 1.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("nature", "Nature", pct, 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("macro1", "Flow",   pct, 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("macro2", "Bloom",  pct, 0.0f));
 
@@ -63,6 +64,9 @@ void ResinProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     smoothOut   = *apvts.getRawParameterValue ("output");
     smoothMix   = *apvts.getRawParameterValue ("mix");
     lastToneSmooth = -1.0f;
+
+    natureLayer.prepare (sampleRate, samplesPerBlock);
+    smoothNature = *apvts.getRawParameterValue ("nature");
 
     isPrepared = true;
 }
@@ -209,6 +213,11 @@ void ResinProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             wet[i] = std::tanh (dcBlocked * 0.9f) * (1.0f / std::tanh (0.9f));
         }
     }
+
+    // --- nature layer: tape hiss + vinyl crackle (additive, after limiter) ---
+    float tNature = *apvts.getRawParameterValue ("nature");
+    smoothNature += (1.0f - tc) * (tNature - smoothNature);
+    natureLayer.process (buffer, smoothNature);
 
     // --- write scope buffer (visual only, no atomics needed per sample) ---
     int wPos = scopeWritePos.load (std::memory_order_relaxed);

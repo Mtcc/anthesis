@@ -55,16 +55,16 @@ private:
     BotanicalLookAndFeel laf;
 
     // ── controls ──────────────────────────────────────────────────────────
-    juce::Slider driveKnob, ageKnob, toneKnob, outputKnob, mixKnob;
+    juce::Slider driveKnob, ageKnob, toneKnob, outputKnob, mixKnob, natureKnob;
     juce::Slider macro1Knob, macro2Knob;  // macro (larger)
-    juce::Label  driveLabel, ageLabel, toneLabel, outputLabel, mixLabel;
+    juce::Label  driveLabel, ageLabel, toneLabel, outputLabel, mixLabel, natureLabel;
     juce::Label  macro1Label, macro2Label;
     juce::ComboBox presetBox;
 
     // APVTS attachments
     using Attachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<Attachment> driveAttach, ageAttach, toneAttach,
-                                outputAttach, mixAttach,
+                                outputAttach, mixAttach, natureAttach,
                                 macro1Attach, macro2Attach;
 
     static constexpr int kW = 700, kH = 480;

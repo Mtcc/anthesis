@@ -17,6 +17,7 @@ target_sources(Resin PRIVATE
     Source/PluginEditor.cpp
     Source/BotanicalLookAndFeel.cpp
     Source/ParticleSystem.cpp
+    Source/NatureLayer.cpp
 )
 
 target_compile_definitions(Resin PUBLIC
