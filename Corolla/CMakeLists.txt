@@ -9,12 +9,15 @@ juce_add_plugin(Corolla
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    VST3_CATEGORIES Spectral
+    VST3_CATEGORIES EQ Spatial
 )
 
 target_sources(Corolla PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    Source/BotanicalLookAndFeel.cpp
+    Source/ParticleSystem.cpp
+    Source/NatureLayer.cpp
 )
 
 target_compile_definitions(Corolla PUBLIC
