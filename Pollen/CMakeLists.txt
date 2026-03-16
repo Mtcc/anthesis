@@ -15,6 +15,9 @@ juce_add_plugin(Pollen
 target_sources(Pollen PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
+    Source/BotanicalLookAndFeel.cpp
+    Source/ParticleSystem.cpp
+    Source/NatureLayer.cpp
 )
 
 target_compile_definitions(Pollen PUBLIC
